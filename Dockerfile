@@ -35,9 +35,7 @@ RUN \
   fi
 
 # Production image, copy all the files and run next
-# FROM base AS runner
 FROM public.ecr.aws/docker/library/node:20.9.0-slim as runner
-# WORKDIR /app
 
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.3 /lambda-adapter /opt/extensions/lambda-adapter
 # ENV AWS_LWA_PORT=3000
@@ -47,15 +45,8 @@ ENV PORT=3000 NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
-# RUN addgroup --system --gid 1001 nodejs
-# RUN adduser --system --uid 1001 nextjs
-
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.js ./
-
-# # Set the correct permission for prerender cache
-# RUN mkdir .next
-# RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
@@ -64,24 +55,11 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/bin/run.sh ./run.sh
-# COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-# COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# USER nextjs
-
-# EXPOSE 3000
-
-# ENV PORT 3000
-
-# # server.js is created by next build from the standalone output
-# # https://nextjs.org/docs/pages/api-reference/next-config-js/output
-# CMD HOSTNAME="0.0.0.0" node server.js
-
-RUN chmod 777 ./run.sh
+RUN chmod -R 777 ./run.sh
 
 # Create a symlink to redirect .next/cache to a /tmp, which is the only writable directory in Lambda
 RUN ln -s /tmp/cache ./.next/cache
 
 ENTRYPOINT ["sh"]
 CMD ["run.sh"]
-# CMD ["node", "server.js"]
